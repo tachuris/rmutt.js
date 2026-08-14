@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [master, v2]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-version: 24
+          cache: true
+
+      - name: Build
+        run: vp run build
+
+      - name: Check # after build because of generated parser
+        run: vp check
+
+      - name: Test
+        run: vp test
+
+      # The CLI end to end, including the eval-free path: transpile to an ESM
+      # artifact and import it.
+      - name: CLI smoke
+        run: |
+          node dist/cli.js examples/bands.rm -i 0 > /dev/null
+          node dist/cli.js examples/chars.rm -t --module esm > /tmp/artifact.mjs
+          node --input-type=module -e "
+            const m = await import('/tmp/artifact.mjs');
+            if (typeof m.default({ iteration: 0 }).expanded !== 'string') process.exit(1);
+          "

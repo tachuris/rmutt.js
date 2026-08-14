@@ -2,22 +2,22 @@
 
 First, you need to provide a grammar to **rmutt.js** via:
 
-* The [command-line interface](CLI.md)
-* The [JavaScript API](API.md)
+- The [command-line interface](CLI.md)
+- The [JavaScript API](API.md)
 
 But, how to write a grammar?
 
 ## Writing rmutt grammars
 
-Grammars in **rmutt** consist primarily of rules. Rules are *named* and specify which choices are allowable at a given point in the grammar. To do this, they can either include literal text which **rmutt** will output, or they can refer to other rules. The simplest rule simply associates a name with some literal text:
+Grammars in **rmutt** consist primarily of rules. Rules are _named_ and specify which choices are allowable at a given point in the grammar. To do this, they can either include literal text which **rmutt** will output, or they can refer to other rules. The simplest rule simply associates a name with some literal text:
 
-``` coffeescript
+```coffeescript
 day: "Thursday";
 ```
 
 This tells **rmutt** to produce the string "Thursday" every time it encounters the `day` rule. So for instance if **rmutt** encountered the rule:
 
-``` coffeescript
+```coffeescript
 announcement: "I'm leaving on " day;
 ```
 
@@ -33,7 +33,7 @@ In the example, the literal "I'm leaving on " is followed by the term `day`, whi
 
 A rule can contain more than one allowable choice. Choices are separated by commas. So for instance if we change our first rule to:
 
-``` coffeescript
+```coffeescript
 day: "Thursday", "Friday" , "Saturday";
 ```
 
@@ -55,7 +55,7 @@ I'm leaving on Saturday
 
 Sometimes it's inconvenient to define a new rule every time you want **rmutt** to make a choice. To make this more convenient, **rmutt** allows for anonymous rules which may be used anywhere in a rule. They're set off by parentheses. For example, we could rewrite our announcement rule as follows:
 
-``` coffeescript
+```coffeescript
 announcement: "I'm " ("leaving" , "staying") " tomorrow";
 ```
 
@@ -73,14 +73,14 @@ I'm staying tomorrow
 
 In case you're wondering, this has exactly the same behavior as the following two rules:
 
-``` coffeescript
+```coffeescript
 announcement:  "I'm " sol " tomorrow";
 sol: "staying", "leaving";
 ```
 
 Anonymous rules can be nested arbitrarily deeply, as in this example:
 
-``` coffeescript
+```coffeescript
 brag: "I have a " (("cool" , "fast") " car", ("great", "winning") " personality") "!";
 ```
 
@@ -88,7 +88,7 @@ brag: "I have a " (("cool" , "fast") " car", ("great", "winning") " personality"
 
 **rmutt** allows you to control how many times to repeat each part of a rule by specifying a minimum and maximum number of allowable repetitions. This is done with the "repetition qualifier" in the form `{min,max}` to specify a minumum and maximum number of repetitions or simply `{num}` to specify an exact number of repetitions. For example, the following rule:
 
-``` coffeescript
+```coffeescript
 howfar: "very, "{3,4} "far away";
 ```
 
@@ -100,7 +100,7 @@ very, very, very, far away
 
 The repetition notation can be applied to non-literals as well. For instance, it could be applied to the invocation of another rule:
 
-``` coffeescript
+```coffeescript
 howfar: emph{3,4} "far away";
 emph: "very, ", "really, ", "extremely, ";
 ```
@@ -113,7 +113,7 @@ really, really, extremely, really, far away
 
 Just as parentheses can be used for anonymous rules, they can also be used to group terms so that the repetition qualifier can be applied to the group. For example we can rewrite our following example like so:
 
-``` coffeescript
+```coffeescript
 howfar: (emph ", "){3,4} "far away";
 emph: "very", "really" , "extremely";
 ```
@@ -134,7 +134,7 @@ There are three shorthand repetition qualifiers that you can use in place of the
 
 In **rmutt**, a rule can change the definition of another rule or define a new rule. This makes certain kinds of context-dependent behavior easier to implement. For instance, suppose you had the following fragmentary English grammar:
 
-``` coffeescript
+```coffeescript
 vp: iv " " adv " " pp;
 iv: "ate", "yelled", "waited";
 pp: prep " " obj;
@@ -145,7 +145,7 @@ adv: "patiently", "impatiently";
 
 Here we've specified that a verb phrase (`vp`) consists of an intransitive verb (`iv`) followed by an adverb (`adv`) followed by a prepositional phrase (`pp`). As this grammar stands, however, it can produce non-idiomatic combinations of verbs and prepositions, such as "ate patiently at you" or "waited impatiently to me". To fix this, we need the `prep` rule to change based on which verb was selected. This can be done by embedding the definitions of `iv` and `prep` in choices together:
 
-``` coffeescript
+```coffeescript
 meta-vp:
 (iv: "ate") (prep: "with") vp,
 (iv: "yelled") (prep: "at") vp,
@@ -182,7 +182,7 @@ The scope of an embedded definition can be controlled with the scope qualifier "
 
 Variables are another way to implement context-dependent behavior. A variable is like an embedded rule whose choices are only made once. Every time the variable is invoked, it will produce the same string. Variable assignments are indicated with an equals sign (=). For instance, the following grammar:
 
-``` coffeescript
+```coffeescript
 s: (character = name, position) character " said, 'I am " character ", so nice to meet you.'";
 name: title " " firstName " " lastName;
 title: "Dr.", "Mr.", "Mrs.", "Ms";
@@ -215,12 +215,13 @@ The scope of variable assignments is lexical, just like embedded definitions. In
 
 As with embedded definitions, the scope of the assignment can be controlled with the "$" scope qualifier.
 
-<a name="indirection" />
+<a name="indirection"></a>
+
 ### Context-dependent behavior: Indirection
 
 Indirection allows the output of a rule to be used as the name of another rule. This is useful when the ranges of valid choices are influenced by a prior choice. For example, the following script:
 
-``` coffeescript
+```coffeescript
 start:  sentence-about[animal];
 animal: "dog", "cat";
 sentence-about[subject]: @subject " is a " subject;
@@ -236,21 +237,21 @@ In addition to controlling what text is produced by a complex of rules, you can 
 
 The simplest form of transformation is a mapping, which produces a substitute value if the value to be transformed exactly matches a given string. For instance the mapping:
 
-``` coffeescript
+```coffeescript
 scaryAnimal: animal > "fish" % "shark";
 animal: "fish", "cat";
 ```
 
 produces either "cat" or "shark". Mappings are indicated with a percent sign (`%`). Mappings can be grouped either by defining them as named rules or enclosing them in parentheses. For instance, the grammar
 
-``` coffeescript
+```coffeescript
 scaryAnimal: animal > ("fish" % "shark" "cat" % "lion");
 animal: "fish", "cat";
 ```
 
 produces either "shark" or "lion". We could also name the transformation by defining it as a rule:
 
-``` coffeescript
+```coffeescript
 scaryAnimal: animal > makeScary;
 animal: "fish", "cat";
 makeScary: "fish" %"shark" "cat" % "lion";
@@ -258,7 +259,7 @@ makeScary: "fish" %"shark" "cat" % "lion";
 
 Mappings are useful for setting up associations between choices. For instance the following example maps basketball team names to the cities they're from:
 
-``` coffeescript
+```coffeescript
 s: (myteam = team) "The " myteam " are from " myteam > team2city;
 team: "Sparks", "Comets";
 team2city: "Sparks" % "L.A." "Comets" % "Houston";
@@ -277,7 +278,7 @@ For the die-hard UNIX hacker inside each of us, **rmutt** allows regular express
 
 Regular expression substitutions are written in the form `/reg. exp./replacement/`. Here's a simple example of regular expression substitution:
 
-``` coffeescript
+```coffeescript
 s: "i like to eat apples and bananas" > /[aeiou]/oo/;
 ```
 
@@ -293,13 +294,13 @@ Like mapping transformations, regular expression transformations can be defined 
 
 Any transformation can be applied to the result of a previous transformation by transformation chaining. This is indicated simply by using a transformation as the left-hand-side of another transformation, like so:
 
-``` coffeescript
+```coffeescript
 thing: "cat" > /t/b/ > "cab" % "taxi";
 ```
 
 The grammar above will produce "taxi". Transformation chains can be arbitrarily long. For instance, the following grammar
 
-``` coffeescript
+```coffeescript
 thing: name > deleteVowels > slangify > deleteVowels;
 deleteVowels: /[aeiou]//;
 slangify: "chck" % "chiggidy" "snp" % "snippidy";
@@ -312,7 +313,7 @@ will produce either "chggdy" or "snppdy".
 
 When a grammar has many rules and variables in it, it's difficult to keep track of their names and make sure that each name is unique. This is especially a problem when combining two grammars that may have been developed independently. To solve this problem, **rmutt** uses "packages", requiring only that each name be unique within a package. To switch to a particular package, use the `package` statement:
 
-``` coffeescript
+```coffeescript
 package greeting;
 
 s: "hello there " o;
@@ -323,7 +324,7 @@ This means that `s` and `o` are to be understood as names within the package cal
 
 Here's how we can use two packages in the same grammar:
 
-``` coffeescript
+```coffeescript
 package lesson;
 
 sentence: o " starts with the letter 'O', " greeting.o;
@@ -348,7 +349,7 @@ Before the first package statement in a grammar, **rmutt** considers names to be
 
 If you're familiar with C or C++, you'll recognize **rmutt**'s syntax for merging two or more grammar files. Suppose you've written a grammar that generates random email addresses, which you've stored in a file called `email.rm`, and you'd like to reuse it in another grammar. The following example shows how to do this.
 
-``` coffeescript
+```coffeescript
 #include "email.rm"
 
 sentence: "my email address is " email_addr "\n";
@@ -361,7 +362,8 @@ Includes can occur anywhere in a grammar.
 ### Shuffling
 
 Consider the following grammar:
-``` coffeescript
+
+```coffeescript
 top: paragraph{4};
 paragraph: transition_adverb sentence ".\n";
 transition_adverb: "also", "moreover", "in addition", "furthermore", "additionally";
@@ -369,6 +371,7 @@ sentence: "some sentence";
 ```
 
 With some (really bad) luck, we could get the result:
+
 ```
 moreover some sentence.
 moreover some sentence.
@@ -381,13 +384,16 @@ This is an extreme example, but even one consecutive repetition of adverbs start
 To achieve more variety, we can specify a shuffle behavior using the `&` prefix. This will prepare a random permutation cycle for the list in order to avoid repeated consecutive items. This way we can ensure we never get a result like above. For example:
 
 Thus:
-``` coffeescript
+
+```coffeescript
 top: paragraph{6};
 paragraph: transition_adverb sentence ".\n";
 transition_adverb: & "also", "furthermore", "additionally";
 sentence: "some sentence";
 ```
+
 would generate:
+
 ```
 furthermore some sentence.
 also some sentence.
@@ -401,12 +407,13 @@ Using the `&&` prefix, the list will be shuffled again when the choices are used
 
 Shuffling modes can be nested:
 
-``` coffeescript
+```coffeescript
   t: (s{4} " "){6};
   s: & "0","1","2",(&& "x","y","z");
 ```
 
 would produce combinations like this:
+
 ```
 10z2 10y2 10x2 10x2 10z2 10y2
 ```
@@ -417,21 +424,21 @@ A choice can be followed by an optional probability quantifier, which may increa
 
 A quantifier consists of a real lower than 1 (probability) or an integer greater than 1 (multiplier) at the end of a choice. For instance
 
-``` coffeescript
+```coffeescript
 number: digit{16};
 digit: "0" 9, "1";
 ```
 
 will produce a string of 16 zeros and ones, which is likely to consist mostly of zeroes. Probability multipliers are a shorthand for repeatedly adding a choice to the rule. The above grammar is equivalent to but more space efficient than the following one:
 
-``` coffeescript
+```coffeescript
 number: digit{16};
 digit: "0", "0", "0", "0", "0", "0", "0", "0", "0", "1";
 ```
 
 It's also equivalent to
 
-``` coffeescript
+```coffeescript
 number: digit{16};
 digit: "0", "1" 0.1;
 ```
@@ -440,16 +447,17 @@ This is, given a total probability of 1, "1" has probability 0.1 and "0" has the
 
 Probabilities and multipliers can be combined. For example:
 
-``` coffeescript
+```coffeescript
 number: digit{16};
 digit: "0" 2, "1" 0.1, "2";
 ```
 
 This is, out of 4 choices ("0" counts twice):
-* "1" got 0.1 probability, as specified
-* the remaining 0.9 (total probability is 1) is distributed among 3 choices (0.3 each)
-* "0" got 0.6 (0.3 multiplied by 2, as specified)
-* "2" got 0.3 (the remaining)
+
+- "1" got 0.1 probability, as specified
+- the remaining 0.9 (total probability is 1) is distributed among 3 choices (0.3 each)
+- "0" got 0.6 (0.3 multiplied by 2, as specified)
+- "2" got 0.3 (the remaining)
 
 ### Embedded code
 
@@ -481,14 +489,14 @@ asciify[char]: {
 };
 ```
 
-
 ## Other important things
 
 ### Entry point
 
 By default, **rmutt** invokes the first rule in its input. Think of this as the "entry point" for your grammar. This is configurable from the [CLI](CLI.md) and the [API](API.md).
 
-<a name="options-package" />
+<a name="options-package"></a>
+
 ### $options package
 
 This is a virtual package that gives access to the current options object.
@@ -504,15 +512,15 @@ permanent_link: "<p><a href=\"http://randomrecipes.com/?seed=" $options.randomSe
 
 ### Line breaks
 
-* All top-level rules and package statements must end in a semicolon (`;`).
+- All top-level rules and package statements must end in a semicolon (`;`).
 
-* Line breaks are not significant; you may use them whenever is convenient.
+- Line breaks are not significant; you may use them whenever is convenient.
 
 ### Circular references
 
 **rmutt** cannot detect certain kinds of errors; in particular, if your grammar is endlessly recursive, like so:
 
-``` coffeescript
+```coffeescript
 deadly: embrace;
 embrace: deadly;
 ```
@@ -560,7 +568,6 @@ aRule: ("clam"{2,10}) > /mc/m, c/ "!";
 
 Comments can be included in **rmutt** grammars. If two slashes in a row (`//`) occur anywhere on a line, the rest of the line is treated as a comment and ignored.
 
-
 ### Special characters
 
 To include special characters in literals, use the following notations:
@@ -578,6 +585,7 @@ Curiosities
 Even without using embedded or external JavaScript code, **rmutt** is Turing-complete. [Here](../examples/turing.rm) is an implementation of a Turing machine in **rmutt**.
 
 ---
-> *This guide is mostly based on [the original rmutt documentation](https://web.archive.org/web/20120208110629/http://www.schneertz.com/rmutt/docs.html) by Joe Futrelle.*
 
-> *"Indirection" section is adapted from [The Dada Engine manual](http://dev.null.org/dadaengine/manual-1.0/dada.html) by Andrew C. Bulhak.*
+> _This guide is mostly based on [the original rmutt documentation](https://web.archive.org/web/20120208110629/http://www.schneertz.com/rmutt/docs.html) by Joe Futrelle._
+
+> _"Indirection" section is adapted from [The Dada Engine manual](http://dev.null.org/dadaengine/manual-1.0/dada.html) by Andrew C. Bulhak._

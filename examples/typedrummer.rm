@@ -1,7 +1,6 @@
 // Typedrummer sequence generator. Nice examples:
-// http://typedrummer.com/tm52dv (random seed 47269793)
-// http://typedrummer.com/y1h689 (random seed -1211208192)
-// http://typedrummer.com/m80885 (random seed -2077350680)
+// http://typedrummer.com/4tp47p (random seed 47269793)
+// http://typedrummer.com/60jsx9 (random seed -14131608)
 
 top:
 "Copy the following line and paste it in http://typedrummer.com/\n\n"

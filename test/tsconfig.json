@@ -1,0 +1,6 @@
+{
+  // When linting individual files, tsgolint (vp check) resolves the nearest
+  // config literally named tsconfig.json. The root one includes only src/, so
+  // tests need this shim to be checked with the settings meant for them.
+  "extends": "../tsconfig.test.json"
+}

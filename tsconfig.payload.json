@@ -1,0 +1,32 @@
+{
+  // The runtime payload is not a normal module: esbuild bundles it into a single
+  // self-contained IIFE whose *text* is inserted into generated code and run through
+  // `new Function`. It therefore may not reference Node or DOM APIs, and may not
+  // import anything outside src/payload.
+  //
+  // `"types": []` (no @types/node) and `"lib": ["ES2022"]` (no DOM) make that a
+  // compile-time guarantee rather than a convention: `fs`, `process`, `window` and
+  // friends simply do not exist here. Typecheck only. esbuild does the emitting.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+
+    "noEmit": true,
+
+    "strict": true,
+    // Off here, on for the library. random.ts is MT19937: fixed-size
+    // Int32Array index math where every access is in-bounds by construction,
+    // and scattering `!` across ~20 sites would only obscure the arithmetic.
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    "types": []
+  },
+  "include": ["src/payload"]
+}

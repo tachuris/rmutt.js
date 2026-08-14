@@ -24,7 +24,7 @@ Grammars in **rmutt** need not relate in any way to the grammar of any human lan
 
 Here's a simple **rmutt** grammar. For an explanation of the syntax, see the [user's guide](GUIDE.md).
 
-``` coffeescript
+```coffeescript
 s: np " " vp ".";
 np: art " " noun, propn;
 art: "the", "a";
@@ -52,7 +52,7 @@ a dog barked.
 
 You can see that the output at each point depends on which rules have been invoked as **rmutt** traverses the hierarchy of choices. Now let's add something simple to demonstrate that the rules need not have a strict hierarchical relationship to one another. In this example we add a `tvp` which includes an `s`:
 
-``` coffeescript
+```coffeescript
 s: np " " vp ".";
 np: art " " noun, propn;
 art: "the", "a";
@@ -76,7 +76,7 @@ Beth said that a cat said that Joe said that the dog meowed....
 
 Notice that in the last example string, the top-level `s` contained an `s` which contained its own `s` which itself contained an `s`. This is allowable according to the grammar, since any `s` may contain another `s`. In fact, **rmutt** would run forever like this if there were no choices available to it that did not contain the embedded `s`. Do you see a problem with the grammar? There are multiple periods after the examples with "said that" in them. This is because there's a period in the definition of `s`, so any string containing more than one `s` will have multiple periods in it. That can be fixed in the following manner:
 
-``` coffeescript
+```coffeescript
 top: s ".";
 s: np " " vp;
 np: art " " noun, propn;
@@ -90,10 +90,12 @@ tv: "scolded", "loved";
 ```
 
 This simple example is just a hint of what **rmutt** can do. For more information see:
-* The [user's guide](GUIDE.md).
-* The [command-line interface documentation](CLI.md).
-* The [JavaScript API documentation](API.md).
-* Find inspiration in the [example grammars](../examples/).
+
+- The [user's guide](GUIDE.md).
+- The [command-line interface documentation](CLI.md).
+- The [JavaScript API documentation](API.md).
+- Find inspiration in the [example grammars](../examples/).
 
 ---
-> *This overview is mostly based on the [original rmutt documentation](https://web.archive.org/web/20140218115250/http://www.schneertz.com/rmutt) by Joe Futrelle.*
+
+> _This overview is mostly based on the [original rmutt documentation](https://web.archive.org/web/20140218115250/http://www.schneertz.com/rmutt) by Joe Futrelle._

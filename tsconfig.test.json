@@ -1,0 +1,19 @@
+{
+  // Typechecks the tests. tsconfig.json includes only src/, so without this
+  // the largest body of code in the repo would go unchecked.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // rootDir is src/ for the emitting build. Tests live outside it and emit
+    // nothing, so it is cleared here rather than widened there (which would
+    // change dist/'s layout).
+    "rootDir": ".",
+    // test/prng.test.ts imports src/payload/random.ts directly, pulling the
+    // payload into this program. It is full of in-bounds fixed-size
+    // typed-array indexing and is checked under tsconfig.payload.json, where
+    // this is off for that reason. Matched here to agree with it.
+    "noUncheckedIndexedAccess": false,
+    "types": ["node"]
+  },
+  "include": ["test", "vitest.config.mts"]
+}

@@ -1,47 +1,68 @@
 {
   "name": "rmutt",
-  "version": "1.0.4",
+  "version": "2.0.0",
   "description": "generates random text from context-sensitive grammars",
-  "main": "index.js",
+  "license": "MIT",
+  "repository": "github:tachuris/rmutt.js",
   "bin": {
-    "rmutt": "./bin/rmutt"
+    "rmutt": "./dist/cli.js"
   },
   "files": [
-    "bin/",
-    "lib/",
-    "index.js",
+    "dist/",
+    "src/rmutt.pegjs",
     "LICENSE",
     "README.md"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/browser.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "test": "mocha",
-    "test-cov": "mocha -r blanket -g expansion -R html-cov > coverage.html",
-    "test-cov-text": "mocha -r blanket -g expansion -R mocha-text-cov",
-    "test-coveralls": "mocha -r blanket -g expansion -R mocha-lcov-reporter | coveralls || true"
-  },
-  "config": {
-    "blanket": {
-      "pattern": "lib",
-      "loader": "./node-loaders/coffee-script",
-      "data-cover-never": "node_modules"
-    }
-  },
-  "repository": "github:rstuven/rmutt.js",
-  "author": "Ricardo Stuven <rstuven@gmail.com>",
-  "license": "MIT",
-  "dependencies": {
-    "coffee-script": "1.10.0",
-    "commander": "2.9.0",
-    "lodash": "3.10.1",
-    "pegjs": "0.9.0",
-    "string-hash": "1.1.0"
+    "build": "vp run build:parser && vp run build:payload && vp run build:lib",
+    "build:parser": "node scripts/build-parser.mjs",
+    "build:payload": "node scripts/build-payload.mjs",
+    "build:lib": "tsc",
+    "cli": "node dist/cli.js",
+    "pretest": "vp run build",
+    "test": "vp check && vp test",
+    "prepublishOnly": "vp run build && vp run test",
+    "coverage": "vp test run --coverage",
+    "prepare": "vp config",
+    "format": "vp check --fix"
   },
   "devDependencies": {
-    "blanket": "1.1.7",
-    "chai": "3.4.1",
-    "coveralls": "2.11.6",
-    "mocha": "2.3.3",
-    "mocha-lcov-reporter": "1.0.0",
-    "mocha-text-cov": "0.1.0"
+    "@types/node": "^26.2.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "esbuild": "^0.28.2",
+    "peggy": "^5.1.0",
+    "typescript": "^7.0.2",
+    "vite-plus": "0.2.8",
+    "vitest": "4.1.10"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.8",
+    "vitest": "4.1.10"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.21.0",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "24.19.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
