@@ -84,13 +84,14 @@ export class RmuttIncludeError extends RmuttError {
   readonly path: string
   readonly from: string | undefined
 
-  constructor(path: string, from: string | undefined, options?: { cause?: unknown }) {
-    super(
-      from == null
-        ? `Cannot resolve include '${path}'`
-        : `Cannot resolve include '${path}' from '${from}'`,
-      options,
-    )
+  constructor(
+    path: string,
+    from: string | undefined,
+    options?: { cause?: unknown; reason?: string },
+  ) {
+    const where = from == null ? '' : ` from '${from}'`
+    const why = options?.reason == null ? '' : `: ${options.reason}`
+    super(`Cannot resolve include '${path}'${where}${why}`, options)
     this.path = path
     this.from = from
   }

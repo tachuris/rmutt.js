@@ -13,7 +13,7 @@ import type { RuleTable } from './ast.js'
 import { parse, type ParseOptions } from './parse.js'
 import { transpile, type TranspileOptions } from './transpile.js'
 
-export interface ExpandOptions extends TranspileOptions {
+export interface ExpandOptions extends CompileOptions {
   /** Generate the i-th of N possible combinations, instead of at random. */
   iteration?: number | undefined
   /** Maximum depth to which the grammar will expand. */

@@ -6,13 +6,14 @@
  * disk.
  */
 
-import { createApi } from './core.js'
+import { composeResolvers, createApi } from './core.js'
+import { resolveHttp } from './http.js'
 import { resolveInclude } from './node/resolver.js'
 
 export * from './core.js'
-export { resolveInclude }
+export { resolveHttp, resolveInclude }
 
-const api = createApi({ resolveInclude })
+const api = createApi({ resolveInclude: composeResolvers([resolveHttp, resolveInclude]) })
 
 export const parse = api.parse.bind(api)
 export const parseSync = api.parseSync.bind(api)

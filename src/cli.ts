@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { compileSync, transpileSync } from './index.js'
+import { compile, transpile } from './index.js'
 import { RmuttError, RmuttSyntaxError } from './errors.js'
 import { wrapModule } from './transpile.js'
 
@@ -47,7 +47,7 @@ function readStdin(): string {
   }
 }
 
-export function main(argv: string[] = process.argv.slice(2)): number {
+export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
   let parsed
   try {
     parsed = parseArgs({
@@ -102,10 +102,10 @@ export function main(argv: string[] = process.argv.slice(2)): number {
 
   try {
     if (values.transpile) {
-      const { transpiled } = transpileSync(source, options)
+      const { transpiled } = await transpile(source, options)
       process.stdout.write(wrapModule(transpiled, format))
     } else {
-      const { compiled } = compileSync(source, options)
+      const { compiled } = await compile(source, options)
       const { expanded } = compiled(options)
       process.stdout.write(expanded ?? '')
     }
@@ -128,4 +128,4 @@ function formatError(err: unknown): string {
   return `${(err as Error).stack ?? String(err)}\n`
 }
 
-process.exitCode = main()
+process.exitCode = await main()

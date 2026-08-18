@@ -54,7 +54,7 @@ Include
   }
 
 Path "path"
-  = match:[a-z0-9/_\-.]+ {
+  = match:[^"\n\r]+ {
     return match.join('')
   }
 

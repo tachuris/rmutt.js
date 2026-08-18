@@ -1,14 +1,15 @@
 /**
  * Browser entry point.
  *
- * This entry point matches the Node entry point except that it binds no include
- * resolver, so its module graph contains no `node:` builtins. CI verifies this
- * by bundling the entry point with esbuild and inspecting the output.
+ * This entry point matches the Node entry point except that it binds only the
+ * HTTP resolver, so its module graph contains no `node:` builtins. CI verifies
+ * this by bundling the entry point with esbuild and inspecting the output.
  *
- * To expand a grammar that uses `#include`, pass your own `resolveInclude`
- * function, backed by `fetch`, a bundled map of sources, or an editor's virtual
- * filesystem. Without a resolver, an include throws `RmuttIncludeError` with a
- * message that says so, instead of failing on a missing `fs` module.
+ * `#include "https://…"` works without configuration. To resolve any other
+ * path, pass your own `resolveInclude` function, backed by a bundled map of
+ * sources or an editor's virtual filesystem. Without such a resolver, an
+ * include throws `RmuttIncludeError` naming the path, instead of failing on a
+ * missing `fs` module.
  *
  * `compile` and `expand` call `new Function`, so the page's Content Security
  * Policy must allow `unsafe-eval`. `transpile` doesn't. To avoid eval at
@@ -16,10 +17,12 @@
  */
 
 import { createApi } from './core.js'
+import { resolveHttp } from './http.js'
 
 export * from './core.js'
+export { resolveHttp }
 
-const api = createApi()
+const api = createApi({ resolveInclude: resolveHttp })
 
 export const parse = api.parse.bind(api)
 export const parseSync = api.parseSync.bind(api)

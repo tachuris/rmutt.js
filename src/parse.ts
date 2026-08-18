@@ -19,32 +19,223 @@ import { parse as parseGrammar } from './generated/parser.js'
 
 const PACKAGE_SEPARATOR = '.'
 
+export interface IncludeResult {
+  source: string
+  /** Becomes the `from` for anything the included file itself includes. */
+  base: string
+  grammarSource?: string | undefined
+}
+
 /**
- * Resolves an `include` directive.
+ * Resolves an `#include` directive.
  *
- * `from` is the base of the file that contains the directive; the Node resolver
- * treats it as that file's directory. The `base` in the returned object becomes
- * the `from` value for any directives inside the resolved file.
+ * `from` is the base of the file that contains the directive. The Node resolver
+ * treats it as that file's directory. `next` delegates to the rest of the
+ * chain, so a resolver that understands only some paths can decline the rest:
+ *
+ * ```javascript
+ * const http = (path, from, next) =>
+ *   path.startsWith('http') ? fetchGrammar(path) : next()
+ * ```
+ *
+ * A resolver can also call `next` and post-process the result, which is how you
+ * write a caching, logging, or path-rewriting layer.
+ *
+ * A resolver can return a promise. Resolving an include is the only I/O that
+ * rmutt performs, and therefore the only reason any of the API is asynchronous.
+ * An async resolver requires `parseAsync` or another promise-returning entry
+ * point. The synchronous ones detect the promise and throw an error that says
+ * so, instead of mistaking it for a source object.
  */
 export type IncludeResolver = (
   path: string,
   from: string | undefined,
-) => { source: string; base: string; grammarSource?: string | undefined }
+  next: () => IncludeResult | Promise<IncludeResult>,
+) => IncludeResult | Promise<IncludeResult>
 
 export interface ParseOptions {
   /** Label for error messages, a file path when the grammar comes from disk. */
   grammarSource?: string | undefined
   /** Base directory for `include` resolution. */
   workingDir?: string | undefined
-  /** Required for grammars using `include`. Omitted means includes throw. */
-  resolveInclude?: IncludeResolver | undefined
+  /**
+   * How to resolve `#include`. A single resolver, or several tried in order
+   * until one returns instead of calling `next`. Omitted means includes throw.
+   */
+  resolveInclude?: IncludeResolver | readonly IncludeResolver[] | undefined
 }
 
-/** Parses a grammar (following includes) into its rule table. */
+/**
+ * Folds a list of resolvers into one.
+ *
+ * Each is handed a `next` that runs the remainder of the list. Falling off the
+ * end means nothing claimed the path, which is an error naming the path rather
+ * than whatever the last resolver happened to fail on.
+ */
+export function composeResolvers(resolvers: readonly IncludeResolver[]): IncludeResolver {
+  return (path, from) => {
+    const step = (index: number): IncludeResult | Promise<IncludeResult> => {
+      const resolver = resolvers[index]
+      if (resolver == null) {
+        throw new RmuttIncludeError(path, from, {
+          reason: `no resolver handled it (tried ${resolvers.length})`,
+        })
+      }
+      return resolver(path, from, () => step(index + 1))
+    }
+    return step(0)
+  }
+}
+
+function toResolver(
+  resolveInclude: IncludeResolver | readonly IncludeResolver[],
+): IncludeResolver {
+  return Array.isArray(resolveInclude)
+    ? composeResolvers(resolveInclude)
+    : (resolveInclude as IncludeResolver)
+}
+
+/**
+ * Mutable state shared by every file in one parse.
+ *
+ * `nextChoiceId` keeps choice IDs unique across the whole parse. The grammar's
+ * own counter restarts for each file it parses, so two files each number their
+ * choices from zero. The runtime keys chooser state by that number, so
+ * colliding IDs make two unrelated choice sites share one chooser: a chooser
+ * sized for the larger site hands the smaller one an out-of-range index, and
+ * the expansion silently comes back empty.
+ *
+ * Only the identity of an ID matters, not its value, because an ID names one
+ * choice site. Renumbering therefore has no effect on a single-file grammar.
+ */
+interface ParseState {
+  nextChoiceId: number
+}
+
+/** Reassigns every choice id in a subtree from the parse-wide counter. */
+function renumberChoices(node: Expression, state: ParseState): void {
+  if (node == null || typeof node === 'string') return
+
+  if (node.type === 'Choices') {
+    node.id = state.nextChoiceId++
+  }
+
+  if ('items' in node && node.items != null) {
+    for (const item of node.items) renumberChoices(item, state)
+  }
+  if ('expr' in node && node.expr != null) renumberChoices(node.expr, state)
+  if ('func' in node && node.func != null) renumberChoices(node.func, state)
+  if ('search' in node && node.search != null) renumberChoices(node.search, state)
+  if ('replace' in node && node.replace != null) renumberChoices(node.replace, state)
+  if ('args' in node && node.args != null) {
+    for (const arg of node.args) {
+      if (typeof arg !== 'string') renumberChoices(arg, state)
+    }
+  }
+}
+
+/** An include the traversal has paused on, waiting to be resolved. */
+interface IncludeRequest {
+  path: string
+  from: string | undefined
+  /** The file the directive appears in, for error messages. */
+  grammarSource: string | undefined
+}
+
+function isThenable(value: unknown): value is Promise<IncludeResult> {
+  return typeof (value as { then?: unknown } | null)?.then === 'function'
+}
+
+/**
+ * Parses a grammar (following includes) into its rule table.
+ *
+ * Throws if the resolver is asynchronous. Use `parseAsync` for that.
+ */
 export function parse(source: string, options: ParseOptions = {}): RuleTable {
   const rules: RuleTable = {}
-  collect(source, rules, options.workingDir, options, options.grammarSource)
+  const state: ParseState = { nextChoiceId: 0 }
+  const walk = collect(
+    source,
+    rules,
+    options.workingDir,
+    options,
+    options.grammarSource,
+    state,
+  )
+
+  let step = walk.next()
+  while (!step.done) {
+    const request = step.value
+    const resolved = resolveOrThrow(request, options)
+    if (isThenable(resolved)) {
+      throw new RmuttIncludeError(request.path, request.grammarSource, {
+        reason:
+          'the include resolver returned a promise. Use parseAsync, compile or ' +
+          'expand (the promise-returning forms) with an asynchronous resolver.',
+      })
+    }
+    step = walk.next(resolved)
+  }
+
   return rules
+}
+
+/** Parses a grammar, awaiting each include. Use with an async resolver. */
+export async function parseAsync(
+  source: string,
+  options: ParseOptions = {},
+): Promise<RuleTable> {
+  const rules: RuleTable = {}
+  const state: ParseState = { nextChoiceId: 0 }
+  const walk = collect(
+    source,
+    rules,
+    options.workingDir,
+    options,
+    options.grammarSource,
+    state,
+  )
+
+  // Includes are resolved one at a time, in the order the grammar declares
+  // them, because an included file can itself declare includes and the
+  // traversal is depth-first. N remote includes cost N round trips.
+  let step = walk.next()
+  while (!step.done) {
+    const request = step.value
+    let resolved
+    try {
+      resolved = await resolveOrThrow(request, options)
+    } catch (err) {
+      throw err instanceof RmuttIncludeError
+        ? err
+        : new RmuttIncludeError(request.path, request.grammarSource, { cause: err })
+    }
+    step = walk.next(resolved)
+  }
+
+  return rules
+}
+
+function resolveOrThrow(
+  request: IncludeRequest,
+  options: ParseOptions,
+): IncludeResult | Promise<IncludeResult> {
+  try {
+    // Presence is checked by the traversal before it yields.
+    const resolve = toResolver(
+      options.resolveInclude as IncludeResolver | readonly IncludeResolver[],
+    )
+    // The terminal `next`: reaching it means a lone resolver declined.
+    return resolve(request.path, request.from, () => {
+      throw new RmuttIncludeError(request.path, request.grammarSource, {
+        reason: 'the resolver declined it',
+      })
+    })
+  } catch (err) {
+    throw err instanceof RmuttIncludeError
+      ? err
+      : new RmuttIncludeError(request.path, request.grammarSource, { cause: err })
+  }
 }
 
 function parseSource(source: string, grammarSource: string | undefined): Grammar {
@@ -55,35 +246,39 @@ function parseSource(source: string, grammarSource: string | undefined): Grammar
   }
 }
 
-function collect(
+/**
+ * The traversal, written once as a generator.
+ *
+ * It yields each include it reaches and receives the resolved source back, so
+ * the same code serves the synchronous and asynchronous entry points above.
+ * Writing it twice would leave two copies of the ordering rules below, which
+ * are subtle enough that they would drift.
+ */
+function* collect(
   source: string,
   rules: RuleTable,
   base: string | undefined,
   options: ParseOptions,
   grammarSource: string | undefined,
-): void {
+  state: ParseState,
+): Generator<IncludeRequest, void, IncludeResult> {
   let pkg: string | undefined
   let entry: string | undefined
 
   for (const node of parseSource(source, grammarSource)) {
     switch (node.type) {
       case 'Include': {
-        const resolve = options.resolveInclude
-        if (resolve == null) {
+        if (options.resolveInclude == null) {
           throw new RmuttIncludeError(node.path, grammarSource)
         }
-        let included
-        try {
-          included = resolve(node.path, base)
-        } catch (err) {
-          throw new RmuttIncludeError(node.path, grammarSource, { cause: err })
-        }
-        collect(
+        const included = yield { path: node.path, from: base, grammarSource }
+        yield* collect(
           included.source,
           rules,
           included.base,
           options,
           included.grammarSource ?? node.path,
+          state,
         )
         break
       }
@@ -101,6 +296,7 @@ function collect(
       case 'Rule': {
         const name = pack(node.name, pkg)
         entry ??= name
+        renumberChoices(node, state)
         setRule(rules, name, node, pkg)
         break
       }
@@ -112,7 +308,7 @@ function collect(
     }
   }
 
-  // An include runs this first and sets $entry to its own first rule; the
+  // An include runs this first and sets $entry to its own first rule. The
   // including file then overwrites it, with `undefined` when it has no rules
   // of its own. A grammar that only includes therefore expands to nothing.
   rules.$entry = entry

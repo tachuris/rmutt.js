@@ -1,0 +1,16 @@
+// Mixes both local and remote include in one grammar
+
+#include "numbers.rm"
+#include "https://raw.githubusercontent.com/tachuris/rmutt.js/refs/heads/master/examples/util.rm"
+
+top:
+  util.tc[headline] ": " util.an[subject]
+  " for the " numbers-ordinal.two-digit " time at platform "
+  numbers.two-digit ".";
+
+headline:
+  "local grammar borrows remote rules",
+  "everything old is new again",
+  "a grammar walks into a bar";
+
+subject: "a apple", "a orange", "a elephant", "a ordinary sentence";

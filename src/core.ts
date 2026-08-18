@@ -23,7 +23,14 @@ import {
   type Expander,
   type ExpandResult,
 } from './compile.js'
-import { parse as parseImpl, type IncludeResolver, type ParseOptions } from './parse.js'
+import {
+  composeResolvers,
+  parse as parseImpl,
+  parseAsync as parseAsyncImpl,
+  type IncludeResolver,
+  type IncludeResult,
+  type ParseOptions,
+} from './parse.js'
 import { transpile as transpileRules, type TranspileResult } from './transpile.js'
 
 export type {
@@ -33,6 +40,7 @@ export type {
   Expander,
   ExpandResult,
   IncludeResolver,
+  IncludeResult,
   ParseOptions,
   TranspileResult,
 }
@@ -68,21 +76,49 @@ export function createApi(defaults: Defaults = {}): Rmutt {
       ? options
       : { ...options, resolveInclude: defaults.resolveInclude }
 
+  const parse = async (source: string, options: ParseOptions = {}): Promise<RuleTable> =>
+    parseAsyncImpl(source, withDefaults(options))
+
   const parseSync = (source: string, options: ParseOptions = {}): RuleTable =>
     parseImpl(source, withDefaults(options))
 
-  const toRules = (source: string | RuleTable, options: CompileOptions): RuleTable =>
+  // Parsing is the only step that can be asynchronous, because resolving an
+  // `#include` is the only I/O rmutt performs. Everything downstream
+  // (codegen, `new Function`, expansion) is pure computation, so the async
+  // entry points await here and are synchronous from this line on.
+  const toRules = async (
+    source: string | RuleTable,
+    options: CompileOptions,
+  ): Promise<RuleTable> => (typeof source === 'string' ? parse(source, options) : source)
+
+  const toRulesSync = (source: string | RuleTable, options: CompileOptions): RuleTable =>
     typeof source === 'string' ? parseSync(source, options) : source
+
+  const transpile = async (source: string | RuleTable, options: CompileOptions = {}) =>
+    transpileRules(await toRules(source, options), options)
 
   const transpileSync = (
     source: string | RuleTable,
     options: CompileOptions = {},
-  ): TranspileResult => transpileRules(toRules(source, options), options)
+  ): TranspileResult => transpileRules(toRulesSync(source, options), options)
+
+  const compile = async (source: string | RuleTable, options: CompileOptions = {}) =>
+    compileImpl(await toRules(source, options), withDefaults(options))
 
   const compileSync = (
     source: string | RuleTable,
     options: CompileOptions = {},
-  ): CompileResult => compileImpl(toRules(source, options), withDefaults(options))
+  ): CompileResult => compileImpl(toRulesSync(source, options), withDefaults(options))
+
+  const expand = async (
+    source: string | RuleTable | Expander,
+    options: ExpandOptions = {},
+  ) =>
+    typeof source === 'function'
+      ? source(options)
+      : compileImpl(await toRules(source, options), withDefaults(options)).compiled(
+          options,
+        )
 
   const expandSync = (
     source: string | RuleTable | Expander,
@@ -93,17 +129,18 @@ export function createApi(defaults: Defaults = {}): Rmutt {
       : compileSync(source, options).compiled(options)
 
   return {
+    parse,
     parseSync,
+    transpile,
     transpileSync,
+    compile,
     compileSync,
+    expand,
     expandSync,
-    parse: async (source, options) => parseSync(source, options),
-    transpile: async (source, options) => transpileSync(source, options),
-    compile: async (source, options) => compileSync(source, options),
-    expand: async (source, options) => expandSync(source, options),
   }
 }
 
+export { composeResolvers }
 export * from './ast.js'
 export { RmuttError, RmuttIncludeError, RmuttSyntaxError } from './errors.js'
 export {

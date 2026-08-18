@@ -183,6 +183,76 @@ and returns the source plus the base for anything that file includes in turn.
 Without a resolver, an `#include` raises `RmuttIncludeError` — a clear message
 rather than a missing-`fs` crash.
 
+### Composing resolvers
+
+`resolveInclude` also accepts a **list**. Each resolver either handles a path
+or calls `next()` to pass it along, so one grammar can mix local files with
+remote ones:
+
+```javascript
+import { compile, resolveInclude } from 'rmutt'
+
+const http = async (path, from, next) => {
+  if (!/^https?:\/\//i.test(path)) return next()
+  const response = await fetch(path)
+  return { source: await response.text(), base: new URL('.', path).href }
+}
+
+const { compiled } = await compile(grammar, {
+  resolveInclude: [http, resolveInclude], // URLs first, then the filesystem
+})
+```
+
+Order is not important here: `http` declines anything that isn't a URL, and
+the built-in filesystem resolver declines anything with a URL scheme rather
+than trying to open `https://…` as a filename.
+
+Calling `next()` and post-processing its result works too, which is how you add
+caching, logging or path rewriting:
+
+```javascript
+const cache = new Map()
+const cached = async (path, from, next) => {
+  if (!cache.has(path)) cache.set(path, await next())
+  return cache.get(path)
+}
+```
+
+If every resolver declines, the include fails with `RmuttIncludeError` naming
+the path. `composeResolvers` is exported if you want to fold a list into a single resolver yourself.
+
+### Asynchronous includes
+
+A resolver may return a promise. Fetching grammars over the network is the motivating case:
+
+```javascript
+// #include "https://example.com/grammars/util.rm"
+const { expanded } = await expand(grammar, {
+  resolveInclude: async (path, from) => {
+    const url = new URL(path, from).href
+    return { source: await (await fetch(url)).text(), base: new URL('.', url).href }
+  },
+})
+```
+
+Two things to know:
+
+- **An include may name a full URL.** `Path` accepts any run of characters up
+  to the closing quote, so `#include "https://…"` parses; what the string means
+  is entirely the resolver's business. Relative paths still work, and `base`
+  lets a fetched grammar's own includes resolve against its location.
+- **An async resolver requires the promise-returning entry points.** The `*Sync`
+  forms reject one by name rather than mistaking the promise for a source
+  object and failing later somewhere unrelated:
+
+  ```
+  Cannot resolve include 'shared.rm': the include resolver returned a promise.
+  Use parseAsync, compile or expand (the promise-returning forms) …
+  ```
+
+- **Includes resolve one at a time**, in declaration order, because an included
+  file may declare includes of its own. N remote includes cost N round trips.
+
 ## Errors
 
 | Class               | Thrown when                         |
