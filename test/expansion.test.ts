@@ -378,6 +378,54 @@ describe('expansion', () => {
       })
     })
   })
+  describe('template string', () => {
+    it('interpolates rule invocations', async () => {
+      const grammar = 'top: `a${u}c`;\nu: "b";'
+      await expectUsingIteration(grammar, ['abc'])
+    })
+    it('interpolates choices', async () => {
+      const grammar = 'top: `[${"a"|"b"}]`;'
+      await expectUsingIteration(grammar, ['[a]', '[b]'])
+    })
+    it('keeps literal newlines', async () => {
+      const grammar = 'top: `a\nb`;'
+      await expectUsingIteration(grammar, ['a\nb'])
+    })
+    it('expands escapes, including the delimiters', async () => {
+      const grammar = 'top: `a\\`b\\${c\\td`;'
+      await expectUsingIteration(grammar, ['a`b${c\td'])
+    })
+    it('interpolates a code block', async () => {
+      const grammar = 'top: `1+2=${{ return 1+2 }}`;'
+      await expectUsingIteration(grammar, ['1+2=3'])
+    })
+    it('nests', async () => {
+      const grammar = 'top: `a${`b${u}`}d`;\nu: "c";'
+      await expectUsingIteration(grammar, ['abcd'])
+    })
+    it('carries variables and repetition like any other term', async () => {
+      const grammar = 'top: (n = "x"|"y") `${n}!`{2};'
+      await expectUsingIteration(grammar, ['x!x!', 'y!y!'])
+    })
+    it('serves as a mapping replacement', async () => {
+      const grammar = 'top: "a-c" > "-"%`${u}`;\nu: "b";'
+      await expectUsingIteration(grammar, ['abc'])
+    })
+    it('always produces a string, never a transformation', async () => {
+      // `concat` filters non-strings, so a lone interpolation that expands to
+      // a function yields ''. That is the point: a template is a string.
+      // Generating `compose` here (what a `Terms` node would do) would leak a
+      // function out of a string literal.
+      const fn = 'f: {\n  return function (input) { return input + "!" };\n};'
+      await expectUsingIteration(`top: \`\${f}\`;\n${fn}`, [''])
+      await expectUsingIteration(`top: \`\${f}\${f}\`;\n${fn}`, [''])
+    })
+    it('drops a non-string interpolation, like the juxtaposed form', async () => {
+      const options = { externals: { count: () => 3 } }
+      await expectUsingIteration('top: `n=${count[""]}`;', ['n='], options)
+      await expectUsingIteration('top: "n=" count[""];', ['n='], options)
+    })
+  })
   describe('code block', () => {
     it('evaluates rule arguments as local variables', async () => {
       const grammar = 'top: fn["1","2","3"];\nfn[a, b, c]: {\n  return c + b + a;\n};'

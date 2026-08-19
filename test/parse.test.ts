@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import type { ChoicesNode, RuleNode } from '../src/ast.js'
+import type { ChoicesNode, Expression, RuleNode, TemplateNode } from '../src/ast.js'
 import { RmuttIncludeError, RmuttSyntaxError } from '../src/errors.js'
 import { compileSync, expand, parseSync } from '../src/index.js'
 import { parse, parseAsync, type IncludeResolver } from '../src/parse.js'
@@ -52,6 +52,79 @@ describe('parse', () => {
     expect(Object.keys(rules).sort()).toEqual(['$entry', 't'])
   })
 
+  describe('template strings', () => {
+    const exprOf = (source: string): Expression => (parse(source).t as RuleNode).expr
+
+    it('collapses a template with no interpolation to a plain string', () => {
+      // Byte-identical to the quoted form, so it works anywhere a string does.
+      expect(exprOf('t: `abc`;')).toEqual(exprOf('t: "abc";'))
+    })
+
+    it('keeps literal newlines', () => {
+      expect(exprOf('t: `a\nb`;')).toBe('a\nb')
+    })
+
+    it('expands escapes, including the delimiters', () => {
+      expect(exprOf('t: `a\\`b\\${c\\nd`;')).toBe('a`b${c\nd')
+    })
+
+    it('collapses an empty template, and an empty interpolation', () => {
+      expect(exprOf('t: ``;')).toBe('')
+      expect(exprOf('t: `${}`;')).toBe('')
+    })
+
+    it('produces a Template node with literal chunks as plain strings', () => {
+      const node = exprOf('t: `a${u}b`;') as TemplateNode
+
+      expect(node.type).toBe('Template')
+      expect(node.items).toEqual([
+        'a',
+        { type: 'Invocation', name: 'u', prefix: null },
+        'b',
+      ])
+    })
+
+    it('folds an interpolation that is itself a literal', () => {
+      expect(exprOf('t: `a${"b"}c`;')).toBe('abc')
+    })
+
+    it('interpolates a full body, including choices and code blocks', () => {
+      const choices = (exprOf('t: `${"a"|"b"}`;') as TemplateNode).items[0]
+      expect((choices as ChoicesNode).type).toBe('Choices')
+
+      const code = (exprOf('t: `${{ return 1 }}`;') as TemplateNode).items[0]
+      expect(code).toEqual({ type: 'CodeBlock', code: ' return 1 ' })
+    })
+
+    it('nests', () => {
+      const outer = exprOf('t: `a${`b${u}`}c`;') as TemplateNode
+      expect((outer.items[1] as TemplateNode).type).toBe('Template')
+    })
+
+    it('numbers choices inside a template from the parse-wide counter', () => {
+      // The walkers in parse.ts key on `items`, so a Template is traversed
+      // like any other node. Distinct ids keep the two choosers separate.
+      const rule = parse('t: `${"a"|"b"}` ("c"|"d");').t as RuleNode
+      const ids = JSON.stringify(rule.expr).match(/"id":\d+/g)
+      expect(ids).toEqual(['"id":0', '"id":1'])
+    })
+
+    it('namespaces invocations inside a template', () => {
+      const rules = parse('package p; t: `a${u}b`; u: "c";')
+      const node = (rules['p.t'] as RuleNode).expr as TemplateNode
+
+      expect(node.items[1]).toEqual({
+        type: 'Invocation',
+        name: 'p.u',
+        prefix: null,
+      })
+    })
+
+    it('serves as a mapping search when it holds no interpolation', () => {
+      expect(exprOf('t: `a` % "b";')).toEqual(exprOf('t: "a" % "b";'))
+    })
+  })
+
   describe('errors', () => {
     it('throws RmuttSyntaxError with structured location data', () => {
       let error: RmuttSyntaxError | undefined
@@ -81,6 +154,17 @@ describe('parse', () => {
       expect(error?.grammarSource).toBe('demo.rm')
       expect(error?.snippet).toContain('demo.rm')
       expect(error?.snippet).toContain('>')
+    })
+
+    it('rejects an unterminated template string', () => {
+      expect(() => parse('t: `unterminated')).toThrow(RmuttSyntaxError)
+    })
+
+    it('rejects an interpolating template as a mapping search', () => {
+      // The search reaches `new RegExp(search, 'g')`, so it has to stay a
+      // literal. Caught at parse time rather than becoming a bad regex.
+      expect(() => parse('t: `a${u}b` % "c";')).toThrow(RmuttSyntaxError)
+      expect(() => parse('t: `a${u}b` % "c";')).toThrow(/interpolat/i)
     })
 
     it('reports a missing include resolver clearly', () => {

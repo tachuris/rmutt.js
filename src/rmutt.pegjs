@@ -162,10 +162,16 @@ Term
   / Invocation
   / Mapping
   / RegExpMapping
+  / TemplateLiteral
   / StringLiteral
 
 Mapping
-  = search:StringLiteral _ '%' _ replace:QualifiedTerm? {
+  = search:(StringLiteral / TemplateLiteral) _ '%' _ replace:QualifiedTerm? {
+    // The search feeds `new RegExp(search, 'g')`, so it must stay a literal.
+    // Checked after the '%' so a plain term keeps its other alternatives.
+    if (typeof search !== 'string') {
+      error('An interpolating template string cannot be a mapping search.')
+    }
     return { type: 'Mapping', search: search, replace: replace }
   }
   / '/' search:RegExpContent '/' _ '%' _ replace:QualifiedTerm? {
@@ -254,6 +260,31 @@ LineTerminatorSequence "end of line"
 StringLiteral "string"
   = parts:('"' DoubleStringCharacters? '"' / "'" SingleStringCharacters? "'") {
       return parts[1] || '';
+    }
+
+TemplateLiteral "template string"
+  = '`' parts:(TemplateCharacters / TemplateInterpolation)* '`' {
+      var items = [], literal = true, i, part
+      for (i = 0; i < parts.length; i++) {
+        part = parts[i]
+        if (part == null || part === '') continue
+        if (typeof part !== 'string') literal = false
+        items.push(part)
+      }
+      if (literal) return items.join('')
+      return { type: 'Template', items: items }
+    }
+
+TemplateCharacters
+  = chars:TemplateCharacter+ { return chars.join('') }
+
+TemplateCharacter
+  = !('`' / '\\' / '${') char_:SourceCharacter { return char_;     }
+  / '\\' sequence:EscapeSequence               { return sequence;  }
+
+TemplateInterpolation
+  = '${' _ expr:Body? _ '}' {
+      return expr
     }
 
 DoubleStringCharacters

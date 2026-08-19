@@ -40,6 +40,18 @@ export interface QuantifiedNode {
   quantifier: number
 }
 
+/**
+ * A backtick string with interpolation: `` `a ${b} c` ``.
+ *
+ * Literal chunks are plain strings, interpolations are nodes. A template with
+ * no interpolation never reaches here: the parser returns a plain string for
+ * it, so it behaves exactly like a quoted literal.
+ */
+export interface TemplateNode {
+  type: 'Template'
+  items: Expression[]
+}
+
 /** Juxtaposition: `a b c`. */
 export interface TermsNode {
   type: 'Terms'
@@ -126,13 +138,14 @@ export type ExpressionNode =
   | QuantifiedNode
   | RepetitionNode
   | RuleNode
+  | TemplateNode
   | TermsNode
   | TransformationNode
 
 /** Every node the parser can return at the top level of a grammar. */
 export type Statement = AssignmentNode | ImportNode | IncludeNode | PackageNode | RuleNode
 
-/** All 13 node types. */
+/** All node types. */
 export type Node = ExpressionNode | ImportNode | IncludeNode | PackageNode
 
 /** A parsed grammar: the top-level statement list. */

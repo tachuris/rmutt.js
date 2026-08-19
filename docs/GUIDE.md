@@ -489,6 +489,38 @@ asciify[char]: {
 };
 ```
 
+### Template strings
+
+Backticks delimit a template string, also called a template literal or backtick string. A template string can span multiple lines, and can interpolate any rmutt expression with `${...}`:
+
+```coffeescript
+note: `Hi ${name},
+
+The ${thing} is ${status}.
+`;
+name: "Ada", "Grace";
+thing: "build", "release";
+status: "green", "still red";
+```
+
+Without template strings, the same rule must escape its line breaks and juxtapose separate strings:
+
+```coffeescript
+note: "Hi " name ",\n" "\n" "The " thing " is " status ".\n";
+```
+
+An interpolation accepts anything a rule body accepts, including choices, groups, repetition, other template strings, and embedded code:
+
+```coffeescript
+top: `${"Hello"|"Hi"} there. 1+2=${{ return 1+2 }}`;
+```
+
+A template string always produces a string. An interpolation that produces a value of any other type contributes nothing to the result.
+
+A template string behaves like any other term, so you can repeat it, transform it, or use it as the replacement side of a mapping. You can't use it as the search side, which must be a literal: `` `a`%"b" `` works, but `` `a${x}`%"b" `` is an error.
+
+For a complete example, see [examples/template.rm](../examples/template.rm), which prints the same note twice, once in each style.
+
 ## Other important things
 
 ### Entry point
@@ -579,6 +611,8 @@ Tab	\t
 Backslash	\\
 Curiosities
 ```
+
+The same notations work inside [template strings](#template-strings), where the delimiters escape too: `` \` `` for a backtick and `\$` for a dollar sign that would otherwise start an interpolation.
 
 ### Turing-complete
 

@@ -145,6 +145,9 @@ function generate(node: Expression, options: TranspileOptions): string {
     case 'Rule':
       return generateRuleDefinition(LOCAL_SCOPE_VAR, node, options)
 
+    case 'Template':
+      return `concat(${generateList(node.items, options)})`
+
     case 'Terms':
       return generateTerms(node, options)
 

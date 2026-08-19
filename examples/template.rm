@@ -1,0 +1,32 @@
+// Template strings
+//
+// The "classic" syntax builds a string using quoted literals, \n escapes and juxtaposition.
+//
+// The "modern" syntax is a string enclosed by backticks: the line breaks are literal
+// and the rules are interpolated with ${...}.
+//
+// In this example, both print the same note, because `top`
+// fixes the choices in variables before the rules expand.
+
+top: (who = name) (what = thing) (how = status)
+  classic
+  "\n"
+  modern;
+
+classic:
+  "Hi " who ",\n"
+  "\n"
+  "The " what " is " how ".\n"
+  "\n"
+  "-- the build robot\n";
+
+modern: `Hi ${who},
+
+The ${what} is ${how}.
+
+-- the build robot
+`;
+
+name: "Ada", "Grace", "Alan";
+thing: "build", "release", "parser";
+status: "green", "still red", "waiting on review";

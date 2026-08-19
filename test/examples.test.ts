@@ -31,6 +31,7 @@ const examples = [
   'spew_xml',
   'story',
   'sva',
+  'template',
   'tree',
   'turing',
   'url',
