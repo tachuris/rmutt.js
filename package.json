@@ -1,48 +1,12 @@
 {
-  "name": "rmutt",
-  "version": "2.0.0",
-  "description": "generates random text from context-sensitive grammars",
-  "license": "MIT",
-  "repository": "github:tachuris/rmutt.js",
-  "bin": {
-    "rmutt": "./dist/cli.js"
-  },
-  "files": [
-    "dist/",
-    "src/rmutt.pegjs",
-    "LICENSE",
-    "README.md"
-  ],
+  "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "browser": "./dist/browser.js",
-      "default": "./dist/index.js"
-    },
-    "./package.json": "./package.json"
-  },
   "scripts": {
-    "build": "vp run build:parser && vp run build:payload && vp run build:lib",
-    "build:parser": "node scripts/build-parser.mjs",
-    "build:payload": "node scripts/build-payload.mjs",
-    "build:lib": "tsc",
-    "cli": "node dist/cli.js",
-    "pretest": "vp run build",
-    "test": "vp check && vp test",
-    "prepublishOnly": "vp run build && vp run test",
-    "coverage": "vp test run --coverage",
     "prepare": "vp config",
-    "format": "vp check --fix"
+    "build": "vp run -r build"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
     "@vitest/coverage-v8": "4.1.10",
-    "esbuild": "^0.28.2",
-    "peggy": "^5.1.0",
-    "typescript": "^7.0.2",
     "vite-plus": "0.2.8",
     "vitest": "4.1.10"
   },
@@ -61,8 +25,5 @@
       "version": "24.19.0",
       "onFail": "download"
     }
-  },
-  "engines": {
-    "node": ">=22"
   }
 }

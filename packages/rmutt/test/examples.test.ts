@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { compile } from '../src/index.js'
 
-const examplesDir = fileURLToPath(new URL('../examples/', import.meta.url))
+const examplesDir = fileURLToPath(new URL('../../../examples/', import.meta.url))
 
 const examples = [
   'addresses',

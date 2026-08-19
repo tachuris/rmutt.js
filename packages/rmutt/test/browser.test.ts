@@ -1,5 +1,11 @@
+import { fileURLToPath } from 'node:url'
+
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vite-plus/test'
+
+// Absolute, not `src/browser.ts`: esbuild resolves relative entryPoints
+// against process.cwd(), which is the invoking directory, not this file's.
+const browserEntry = fileURLToPath(new URL('../src/browser.ts', import.meta.url))
 
 /**
  * Browser support.
@@ -16,7 +22,7 @@ import { describe, expect, it } from 'vite-plus/test'
 describe('browser entry', () => {
   it('bundles for the browser with no node: builtins', async () => {
     const result = await build({
-      entryPoints: ['src/browser.ts'],
+      entryPoints: [browserEntry],
       bundle: true,
       format: 'esm',
       platform: 'browser',
@@ -35,7 +41,7 @@ describe('browser entry', () => {
 
   it('parses, transpiles and expands without touching the filesystem', async () => {
     const result = await build({
-      entryPoints: ['src/browser.ts'],
+      entryPoints: [browserEntry],
       bundle: true,
       format: 'esm',
       platform: 'browser',
@@ -59,7 +65,7 @@ describe('browser entry', () => {
 
   it('reports a missing include resolver instead of failing on fs', async () => {
     const result = await build({
-      entryPoints: ['src/browser.ts'],
+      entryPoints: [browserEntry],
       bundle: true,
       format: 'esm',
       platform: 'browser',

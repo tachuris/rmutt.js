@@ -1,3 +1,6 @@
+import { relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vite-plus/test'
 
 import { compile, expand, expandSync } from '../src/index.js'
@@ -279,7 +282,14 @@ describe('expansion', () => {
     })
   })
   it('t14 - includes', async () => {
-    const grammar = '#include "test/t14b.rm"\na: b;'
+    // Exercises resolveInclude's process.cwd()-relative fallback (no `from`
+    // given), so the include path must be relative to the actual cwd the
+    // test runs under rather than a path relative to this file.
+    const t14bPath = relative(
+      process.cwd(),
+      fileURLToPath(new URL('t14b.rm', import.meta.url)),
+    )
+    const grammar = `#include "${t14bPath}"\na: b;`
     await expectUsingIteration(grammar, ['yes!'])
   })
   describe('rule arguments', () => {

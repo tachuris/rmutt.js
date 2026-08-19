@@ -16,21 +16,25 @@ jobs:
           node-version: 24
           cache: true
 
+      - name: README in sync
+        run: diff README.md packages/rmutt/README.md
+
       - name: Build
         run: vp run build
 
       - name: Check # after build because of generated parser
         run: vp check
 
+      # `vp test` at the workspace root ignores packages/rmutt's own `test` config.
       - name: Test
-        run: vp test
+        run: vp -C packages/rmutt test
 
       # The CLI end to end, including the eval-free path: transpile to an ESM
       # artifact and import it.
       - name: CLI smoke
         run: |
-          node dist/cli.js examples/bands.rm -i 0 > /dev/null
-          node dist/cli.js examples/chars.rm -t --module esm > /tmp/artifact.mjs
+          node packages/rmutt/dist/cli.js examples/bands.rm -i 0 > /dev/null
+          node packages/rmutt/dist/cli.js examples/chars.rm -t --module esm > /tmp/artifact.mjs
           node --input-type=module -e "
             const m = await import('/tmp/artifact.mjs');
             if (typeof m.default({ iteration: 0 }).expanded !== 'string') process.exit(1);
