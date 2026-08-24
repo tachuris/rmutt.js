@@ -1,0 +1,441 @@
+/* Palette: VS Code's "Dark Modern" theme. Workbench colors come from
+   dark_modern.json, syntax colors from the Dark+ / dark_vs token colors it
+   includes. Dark Modern is a dark theme, so there is no light variant. */
+:root {
+  --ground: #1f1f1f;
+  --ground-2: #181818;
+  --ground-3: #313131;
+  --rule: #3c3c3c;
+  --rule-soft: #2b2b2b;
+  --ink: #cccccc;
+  --ink-dim: #9d9d9d;
+  --ink-faint: #6e7681;
+  --caret: #aeafad;
+  --selection: #264f78;
+  --scrollbar: #79797966;
+  --accent: #0078d4;
+  --accent-hover: #026ec1;
+  --accent-ink: #ffffff;
+  --accent-text: #4daafc;
+  --bad: #f85149;
+  --bad-ground: #5a1d1d;
+
+  /* Syntax tokens, named after the TextMate scopes they come from. */
+  --tok-comment: #6a9955;
+  --tok-string: #ce9178;
+  --tok-number: #b5cea8;
+  --tok-keyword: #569cd6;
+  --tok-control: #c586c0;
+  --tok-operator: #d4d4d4;
+  --tok-quantifier: #d7ba7d;
+  --tok-function: #dcdcaa;
+  --tok-variable: #9cdcfe;
+  --tok-constant: #4fc1ff;
+  --tok-type: #4ec9b0;
+  --tok-regexp: #d16969;
+  --tok-label: #c8c8c8;
+  --tok-punct: #808080;
+  --tok-invalid: #f44747;
+
+  --mono:
+    ui-monospace, 'SF Mono', SFMono-Regular, 'Cascadia Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+  --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  color-scheme: dark;
+}
+
+::selection {
+  background: var(--selection);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+* {
+  scrollbar-color: var(--scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 14px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100dvh;
+}
+
+.mark {
+  font: 700 12px/1 var(--sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.mark i {
+  font-style: normal;
+  color: var(--accent-text);
+}
+a.mark {
+  text-decoration: none;
+}
+a.mark:hover {
+  color: var(--accent-text);
+}
+
+.link {
+  font: 500 12px/1 var(--sans);
+  color: var(--accent-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  font: 500 12px/1 var(--sans);
+  background: var(--ground-3);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--rule);
+  border-color: var(--ink-faint);
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.field > label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.field select,
+.field input.num {
+  font: 400 12px/1 var(--mono);
+  background: var(--ground-3);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.4rem 0.45rem;
+}
+.field select {
+  max-width: 15rem;
+}
+.field input.num {
+  width: 5.5rem;
+}
+.field input.num::placeholder {
+  color: var(--ink-faint);
+}
+optgroup {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.scroll {
+  overflow: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  min-width: 0;
+  min-height: 0;
+}
+
+.out {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre;
+  margin: 0;
+}
+.out.placeholder {
+  color: var(--ink-faint);
+  white-space: pre-wrap;
+}
+.out.stale {
+  opacity: 0.4;
+}
+
+/* Rendered HTML output. html-view.ts injects the palette into the document itself. */
+.out-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--ground-2);
+}
+.out-frame.stale {
+  opacity: 0.4;
+}
+
+.tabs {
+  display: flex;
+}
+.tab {
+  font: 500 11px/1 var(--sans);
+  letter-spacing: 0.04em;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-faint);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* Sits between the tabs and the meta; the auto margin keeps both to the
+   right, with the tabs alone on the left. */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* An author `display` outranks the UA's `[hidden]` rule. */
+.check[hidden] {
+  display: none;
+}
+.check:hover {
+  color: var(--ink-dim);
+}
+.check input {
+  accent-color: var(--accent);
+  margin: 0;
+  cursor: pointer;
+}
+
+.meta {
+  font: 400 10.5px/1 var(--mono);
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.8rem;
+}
+
+/* The rail: wordmark, example picker, phone mode switch, Randomize/Stop. */
+.rail {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--ground-2);
+  flex-wrap: wrap;
+}
+.rail .spacer {
+  flex: 1 1 auto;
+}
+
+.modes {
+  display: none;
+}
+
+/* The two-pane body: grammar left, divider, output right. */
+.body {
+  display: grid;
+  grid-template-columns: var(--split, 1fr) 1px 1fr;
+  min-height: 0;
+}
+
+.pane {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+}
+/* Editor, then footer. */
+#pane-grammar {
+  grid-template-rows: 1fr auto;
+}
+/* Tabs, then output. */
+#pane-output {
+  grid-template-rows: auto 1fr;
+}
+.pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.8rem;
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--ground-2);
+  min-height: 2.35rem;
+}
+.pane-foot {
+  border-top: 1px solid var(--rule-soft);
+}
+
+.editor-host {
+  background: var(--ground);
+  padding: 0.9rem 1rem 3rem;
+}
+
+.output-host {
+  background: var(--ground-2);
+  color: var(--ink);
+  padding: 0.9rem 1.1rem 3rem;
+}
+/* The frame's own document carries the padding and scrolls itself. */
+.output-host:has(> .out-frame) {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* CodeMirror fills its host, ie. the host's own padding is its inset. */
+.editor-host .cm-editor,
+.output-host .cm-editor {
+  height: 100%;
+}
+.output-host .cm-gutters {
+  background: var(--ground-2);
+}
+/* The gutter is sticky, so it needs its own ground: without one, horizontally
+   scrolled code slides under the line numbers. */
+.editor-host .cm-gutters {
+  background: var(--ground);
+}
+.editor-host .cm-lineNumbers .cm-gutterElement {
+  padding-right: 0.9rem;
+}
+
+/* Divider, draggable. */
+.divider {
+  background: var(--rule-soft);
+  cursor: col-resize;
+  touch-action: none;
+  position: relative;
+}
+.divider::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+}
+.divider:hover,
+.divider.dragging {
+  background: var(--accent);
+}
+
+/* Error pane: replaces the footer under the editor. */
+.err {
+  background: var(--bad-ground);
+  border-top: 1px solid color-mix(in oklab, var(--bad) 45%, transparent);
+  color: var(--ink);
+  padding: 0.7rem 0.9rem;
+  display: grid;
+  gap: 0.45rem;
+  /* A percentage here would resolve against the grid row's indefinite auto
+     height and not clamp at all — pane content would overflow the viewport
+     instead of scrolling internally. */
+  max-height: min(45vh, 22rem);
+  overflow-y: auto;
+}
+.err-head {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.err-body {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.err pre {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre;
+  overflow-x: auto;
+  background: var(--rule-soft);
+  padding: 0.5rem 0.6rem;
+  border-radius: 4px;
+}
+
+/* At 390px the vertical split has nowhere to put a second pane, so it grows
+   a Grammar/Output switch its desktop form doesn't have. */
+@media (max-width: 620px) {
+  .body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+  .body > .divider {
+    display: none;
+  }
+  .body > .pane[data-mode='off'] {
+    display: none;
+  }
+  .modes {
+    display: flex;
+    gap: 0.2rem;
+    background: var(--ground);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .modes button {
+    font: 500 11px/1 var(--sans);
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    color: var(--ink-faint);
+    padding: 0.35rem 0.55rem;
+    cursor: pointer;
+  }
+  .modes button[aria-pressed='true'] {
+    background: var(--ground-3);
+    color: var(--ink);
+  }
+  .field {
+    display: none;
+  }
+  /* The pane head is tight at 390px: "View as HTML" becomes "HTML". */
+  .wide-only {
+    display: none;
+  }
+}

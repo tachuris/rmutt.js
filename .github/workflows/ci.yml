@@ -9,7 +9,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: voidzero-dev/setup-vp@v1.17.0
         with:
@@ -29,8 +29,8 @@ jobs:
       - name: Test
         run: vp -C packages/rmutt test
 
-      # The CLI end to end, including the eval-free path: transpile to an ESM
-      # artifact and import it.
+      # The CLI end to end, including the eval-free path:
+      # transpile to an ESM artifact and import it.
       - name: CLI smoke
         run: |
           node packages/rmutt/dist/cli.js examples/bands.rm -i 0 > /dev/null
@@ -39,3 +39,42 @@ jobs:
             const m = await import('/tmp/artifact.mjs');
             if (typeof m.default({ iteration: 0 }).expanded !== 'string') process.exit(1);
           "
+
+  deploy:
+    needs: test
+    if: >-
+      github.event_name == 'push'
+      && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/v2')
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-version: 24
+          cache: true
+
+      # packages/playground/public/examples symlinked to examples/
+      # Vite's build dereferences it into real files for upload.
+      # -t also builds rmutt package.
+      - name: Build
+        run: vp -C packages/playground run -t build
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: packages/playground/dist
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v5

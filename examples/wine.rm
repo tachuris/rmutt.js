@@ -4,7 +4,7 @@ import cap,an from util;
 
 top: reviews;
 _:" ";
-review:  "<b>" rating "</b><i>" wineName "</i>" price "<br>\n" cap[description] _ cap[recommendation]
+review:  "<b>" rating "</b> <i>" wineName "</i> " price "<br>\n" cap[description] _ cap[recommendation]
 ;reviews:  review "<p>" review "<p>" review "<p>" review "<p>"  review "<p>"  review "<p>" review "<p>" review "<p>" review "<p>" review "<p>"
 ;rating:  "73" | "84" | "88" | "90" | "91" | "92" | "94" | "11"
 ;price:  "$45" | "$37" | "$58" | "$98" | "$132" | "$7" | "$.50" | "$1729"
@@ -106,7 +106,7 @@ review:  "<b>" rating "</b><i>" wineName "</i>" price "<br>\n" cap[description] 
 ;attribute:  "vibrancy" | "delicacy" | "plausibility" | "whimsy" | "bitterness" | "ambiguity" | "machismo"
 | "sarcasm" | "impudence"
 ;sense:  "place" | "earthiness" | "traditionalism" | "direction" | "history" | "irony" | "humor"
-;lacks:  "lacks" | "doesn't have" 
+;lacks:  "lacks" | "doesn't have"
 ;enough:  "enough" | "the right"
 ;tosatisfy:  "for a" _ pastyear _ province | "for a" _ province _ "of its class"
 ;pastyear:  "1961" | "1972" | "1983" | "1987" | "1990" | "1991" | "1992" | "1993" | "1994" | "1995"
